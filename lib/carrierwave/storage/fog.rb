@@ -165,6 +165,12 @@ module CarrierWave
           expires_at = options.fetch(:expires_at, nil)
           if expires_at.present?
             ::Fog::Time.at(expires_at)
+          elsif @uploader.expiration_date.present?
+            if @uploader.expiration_date.respond_to? :call
+              ::Fog::Time.at(@uploader.expiration_date.call)
+            else
+              ::Fog::Time.at(@uploader.expiration_date)
+            end
           else
             ::Fog::Time.now + @uploader.fog_authenticated_url_expiration
           end
