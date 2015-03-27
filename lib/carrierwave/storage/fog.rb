@@ -142,14 +142,31 @@ module CarrierWave
             local_directory = connection.directories.new(:key => @uploader.fog_directory)
             local_file = local_directory.files.new(:key => path)
             if @uploader.fog_credentials[:provider] == "AWS"
-              local_file.url(::Fog::Time.now + @uploader.fog_authenticated_url_expiration, options)
+              local_file.url(expiration_date(options), options)
             elsif ['Rackspace', 'OpenStack'].include?(@uploader.fog_credentials[:provider])
-              connection.get_object_https_url(@uploader.fog_directory, path, ::Fog::Time.now + @uploader.fog_authenticated_url_expiration)
+              connection.get_object_https_url(@uploader.fog_directory, path, expiration_date(options))
             else
-              local_file.url(::Fog::Time.now + @uploader.fog_authenticated_url_expiration)
+              local_file.url(expiration_date(options))
             end
           else
             nil
+          end
+        end
+
+        ##
+        # Lookup value for file content-type header
+        #
+        # === Returns
+        #
+        # [String] value of content-type
+        #
+        def expiration_date(options = {})
+          symbolized_options = options.symbolize_keys
+          expires_at = options.fetch(:expires_at, nil)
+          if expires_at.present?
+            ::Fog::Time.at(expires_at)
+          else
+            ::Fog::Time.now + @uploader.fog_authenticated_url_expiration
           end
         end
 
